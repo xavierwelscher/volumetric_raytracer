@@ -1,0 +1,71 @@
+#version 430 core
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout(rgba8, binding = 0) uniform writeonly image2D img_output;
+
+void main() {
+				ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
+				ivec2 dims = imageSize(img_output);
+				if (pixel_coords.x >= dims.x || pixel_coords.y >= dims.y) return;
+
+				vec2 uv = (vec2(pixel_coords) / vec2(dims)) * 2.0 - 1.0;
+				uv.x *= float(dims.x) / float(dims.y);
+
+				mat3 camMatrix = setCamera(u_camPos, u_camTarget, 0.0);
+				float focalLength = 1.0 / tan(radians(u_fov) * 0.5);
+
+				vec3 ro = u_camPos;
+				vec3 rd = camMatrix * normalize(vec3(uv, focalLength)); 
+
+				float t = 0.0;
+				float max_t = 100.0;     
+				int max_steps = 250;     
+				float step_size = 0.2;
+
+				float transmittance = 1.0;
+				vec3 accumulated_color = vec3(0.0);
+
+				for (int i = 0; i < max_steps; i++) {
+								vec3 pos = ro + rd * t;
+
+								if (u_cloudVisible == 1) {
+												renderClouds(pos, step_size, transmittance, accumulated_color);
+								}
+
+								if (u_terrainVisible == 1) {
+												if (renderTerrain(pos, rd, step_size, transmittance, accumulated_color)) {
+																break; 
+												}
+								}
+
+								if (transmittance < 0.01) {
+												transmittance = 0.0;
+												break;
+								}
+
+								t += step_size; 
+								if (t > max_t) break;
+				}
+
+				// Sky
+				if (transmittance > 0.0) {
+								// Gradient
+								float skyT = max(rd.y, 0.0);
+								vec3 horizonColor = vec3(0.65, 0.75, 0.85);
+								vec3 zenithColor = vec3(0.15, 0.35, 0.75);
+								vec3 bg = mix(horizonColor, zenithColor, skyT);
+
+								// Sun
+								float sunDot = max(dot(rd, lightDir), 0.0);
+								float sunGlow = pow(sunDot, 16.0) * 0.5;
+								bg += vec3(1.0, 0.85, 0.6) * sunGlow;
+
+								float sunDisk = smoothstep(0.998, 0.999, sunDot);
+								bg += vec3(1.0, 0.95, 0.8) * sunDisk * 2.0;
+
+								accumulated_color += transmittance * bg;
+				}
+
+				vec3 final_color = pow(accumulated_color, vec3(1.0 / 2.2));
+				imageStore(img_output, pixel_coords, vec4(final_color, 1.0));
+}
