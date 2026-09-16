@@ -1,4 +1,5 @@
 #include <caustx/Engine.h>
+#include "glad/gl.h"
 #include "panels/TerrainSettingsPanel.h"
 #include "panels/ViewportPanel.h"
 #include "panels/CloudPanel.h"
@@ -51,6 +52,7 @@ bool CaustXEngine::Init(int width, int height, const std::string& title) {
 												"shaders/raytracer.comp", 
 												std::vector<std::string>{
 																"shaders/common.glsl",
+																"shaders/noise.glsl",
 																"shaders/terrain.glsl", 
 																"shaders/clouds.glsl"
 												}
@@ -68,6 +70,13 @@ bool CaustXEngine::Init(int width, int height, const std::string& title) {
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, RENDER_WIDTH, RENDER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 				glBindImageTexture(0, renderTexture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
 
+				glGenTextures(1, &heatmapTexture);
+				glBindTexture(GL_TEXTURE_2D, heatmapTexture);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, RENDER_WIDTH, RENDER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+				glBindImageTexture(2, heatmapTexture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+
 				glGenTextures(1, &heightmapTex);
 				glBindTexture(GL_TEXTURE_2D, heightmapTex);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -81,14 +90,21 @@ bool CaustXEngine::Init(int width, int height, const std::string& title) {
 
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, TERRAIN_SIZE, TERRAIN_SIZE, 0, GL_RED, GL_FLOAT, nullptr);
 
+				glGenQueries(1, &gpuTimerQuery);
+
 				IMGUI_CHECKVERSION();
 				ImGui::CreateContext();
+
+				ImGuiIO& io = ImGui::GetIO();
+				io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
 				ImGui::StyleColorsDark();
 				ImGui_ImplGlfw_InitForOpenGL(window, true);
 				ImGui_ImplOpenGL3_Init("#version 430");
 
 
-				panels.push_back(std::make_unique<ViewportPanel>(renderTexture, RENDER_WIDTH, RENDER_HEIGHT));
+				panels.push_back(std::make_unique<ViewportPanel>("Volumetric Renderer", renderTexture, RENDER_WIDTH, RENDER_HEIGHT, &gpuTimeMs));
+				panels.push_back(std::make_unique<ViewportPanel>("Step Heatmap", heatmapTexture, RENDER_WIDTH, RENDER_HEIGHT, &gpuTimeMs));
 				panels.push_back(std::make_unique<TerrainSettingsPanel>(terrainConfig, heightmapTex));
 				panels.push_back(std::make_unique<CloudPanel>(cloudConfig));
 
@@ -185,6 +201,7 @@ void CaustXEngine::Update(float deltaTime) {
 }
 
 void CaustXEngine::Render() {
+
 				if (terrainConfig.needsUpdate) {
 								terrainShader->Use();
 								glBindImageTexture(1, heightmapTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);
@@ -213,8 +230,16 @@ void CaustXEngine::Render() {
 
 				int workGroupsX = (RENDER_WIDTH + 7) / 8;
 				int workGroupsY = (RENDER_HEIGHT + 7) / 8;
+
+				glBeginQuery(GL_TIME_ELAPSED, gpuTimerQuery);
 				glDispatchCompute(workGroupsX, workGroupsY, 1);
 				glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+				glEndQuery(GL_TIME_ELAPSED);
+
+				GLuint64 timeElapsed = 0;
+				glGetQueryObjectui64v(gpuTimerQuery, GL_QUERY_RESULT, &timeElapsed);
+
+				gpuTimeMs = static_cast<float>(timeElapsed) / 1000000.0f;
 }
 
 void CaustXEngine::DrawUI() {
@@ -222,9 +247,15 @@ void CaustXEngine::DrawUI() {
 				ImGui_ImplGlfw_NewFrame();
 				ImGui::NewFrame();
 
+				ImGui::DockSpaceOverViewport();
+
 				for (auto& panel : panels) {
 								panel->onRender();
 				}
+
+				ImGui::Begin("Benchmark Metrics");
+				ImGui::Text("GPU Compute Time: %.3f ms", gpuTimeMs);
+				ImGui::End();
 
 				ImGui::Render();
 
@@ -238,6 +269,7 @@ void CaustXEngine::DrawUI() {
 }
 
 void CaustXEngine::Shutdown() {
+				if (gpuTimerQuery) glDeleteQueries(1, &gpuTimerQuery);
 				if (renderTexture) glDeleteTextures(1, &renderTexture);
 				if (heightmapTex) glDeleteTextures(1, &heightmapTex);
 

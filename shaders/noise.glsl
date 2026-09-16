@@ -12,6 +12,23 @@ vec2 hash22(vec2 p) {
 				return fract((p3.xx + p3.yz) * p3.zy);
 }
 
+float hash31(vec3 p3) {
+				p3 = fract(p3 * 0.1031);
+				p3 += dot(p3, p3.yzx + 33.33);
+				return fract((p3.x + p3.y) * p3.z);
+}
+
+float noise3D(vec3 x) {
+				vec3 i = floor(x);
+				vec3 f = fract(x);
+				f = f * f * (3.0 - 2.0 * f);
+
+				return mix(mix(mix(hash31(i + vec3(0,0,0)), hash31(i + vec3(1,0,0)), f.x),
+                   mix(hash31(i + vec3(0,1,0)), hash31(i + vec3(1,1,0)), f.x), f.y),
+               mix(mix(hash31(i + vec3(0,0,1)), hash31(i + vec3(1,0,1)), f.x),
+                   mix(hash31(i + vec3(0,1,1)), hash31(i + vec3(1,1,1)), f.x), f.y), f.z);
+}
+
 float perlin(vec2 p, float wrap) {
 				vec2 i = floor(p);
 				vec2 f = fract(p);
@@ -77,6 +94,19 @@ float worley(vec2 p, float wrap) {
 				}
 
 				return min_dist;
+}
+
+float fbm3D(vec3 p) {
+				float f = 0.0;
+				float amp = 0.5;
+				
+				for(int i = 0; i < 4; i++) {
+								f += amp * noise3D(p);
+								p *= 2.0;
+								amp *= 0.5;
+				}
+
+				return f;
 }
 
 float fbmWorley(vec2 p, float wrap) {

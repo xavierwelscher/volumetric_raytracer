@@ -32,10 +32,14 @@ private:
     std::unique_ptr<ComputeShader> terrainShader;
 
     GLuint renderTexture;
+		GLuint heatmapTexture;
     GLuint heightmapTex;
 
 		TerrainConfig terrainConfig;
 		CameraConfig cameraConfig;
 		CloudConfig cloudConfig;
 		std::vector<std::unique_ptr<IPanel>> panels;
+
+		GLuint gpuTimerQuery;
+		float gpuTimeMs = 0.0f;
 };
