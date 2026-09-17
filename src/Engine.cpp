@@ -221,11 +221,17 @@ void CaustXEngine::Render() {
 				raytraceShader->SetVec3("u_camTarget", cameraConfig.target[0], cameraConfig.target[1], cameraConfig.target[2]);
 				raytraceShader->SetFloat("u_fov", cameraConfig.fov);
 
-				raytraceShader->SetInt("u_terrainVisible", terrainConfig.isVisible ? 1 : 0);
+				float currentTime = static_cast<float>(glfwGetTime());
+				raytraceShader->SetFloat("u_time", currentTime);
+
+				raytraceShader->SetFloat("u_cloudDensityMultiplier", cloudConfig.densityMultiplier);
+				raytraceShader->SetFloat("u_cloudLightAbsorption", cloudConfig.lightAbsorption);
+				raytraceShader->SetFloat("u_cloudNoiseScale", cloudConfig.noiseScale);
 				raytraceShader->SetInt("u_cloudVisible", cloudConfig.isVisible ? 1 : 0);
 
 				glActiveTexture(GL_TEXTURE1);
 				glBindTexture(GL_TEXTURE_2D, heightmapTex);
+				raytraceShader->SetInt("u_terrainVisible", terrainConfig.isVisible ? 1 : 0);
 				raytraceShader->SetInt("u_heightmap", 1);
 
 				int workGroupsX = (RENDER_WIDTH + 7) / 8;

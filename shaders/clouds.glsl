@@ -1,3 +1,8 @@
+uniform float u_time;
+uniform float u_cloudDensityMultiplier;
+uniform float u_cloudLightAbsorption;
+uniform float u_cloudNoiseScale;
+
 float sdBox(vec3 p, vec3 b) {
 				vec3 q = abs(p) - b;
 				return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
@@ -15,10 +20,11 @@ float getCloudDensity(vec3 p) {
 
 				float edgeSoftness = 1.0;
 				float baseDensity = clamp(-dist * edgeSoftness, 0.0, 1.0);
-				float noiseVal = fbm3D(p * 0.5);
+				vec3 windOffset = vec3(u_time * 0.8, 0.0, u_time * 0.3);
+				float noiseVal = fbm3D((p + windOffset) * u_cloudNoiseScale);
 				float finalDensity = baseDensity - (1.0 - noiseVal) * 1.2;
 
-				return max(finalDensity, 0.0);
+				return max(finalDensity * u_cloudDensityMultiplier, 0.0);
 }
 
 float calculateLightEnergy(vec3 p, vec3 lightDir) {
@@ -30,7 +36,7 @@ float calculateLightEnergy(vec3 p, vec3 lightDir) {
 								lp += lightDir * lightStepSize;
 								float d = getCloudDensity(lp);
 
-								lightTransmittance *= exp(-d * lightStepSize * 2.0); 
+								lightTransmittance *= exp(-d * lightStepSize * u_cloudLightAbsorption * 2.0); 
 
 								if (lightTransmittance < 0.01) break;
 				}
@@ -42,8 +48,7 @@ void renderClouds(vec3 pos, float step_size, inout float transmittance, inout ve
 				float density = getCloudDensity(pos);
 
 				if (density > 0.001) {
-								float absorption = 1.5; 
-								float stepTransmittance = exp(-density * step_size * absorption);
+								float stepTransmittance = exp(-density * step_size * u_cloudLightAbsorption);
 
 								vec3 lightDir = normalize(vec3(0.8, 0.8, -0.3));
 								float lightEnergy = calculateLightEnergy(pos, lightDir);
