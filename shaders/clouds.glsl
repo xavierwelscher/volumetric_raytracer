@@ -8,11 +8,14 @@ float sdBox(vec3 p, vec3 b) {
 				return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
 }
 
-float getCloudDensity(vec3 p) {
-				vec3 center = vec3(0.0, 15.0, 0.0);
-				vec3 localPos = p - center;
+float getCloudDistance(vec3 p) {
+    vec3 center = vec3(0.0, 15.0, 0.0);
+    vec3 bounds = vec3(6.0, 4.0, 6.0);
+    return sdBox(p - center, bounds);
+}
 
-				float dist = sdBox(localPos, vec3(6.0, 4.0, 6.0));
+float getCloudDensity(vec3 p) {
+				float dist = getCloudDistance(p);
 
 				if (dist > 0.0) {
 								return 0.0;

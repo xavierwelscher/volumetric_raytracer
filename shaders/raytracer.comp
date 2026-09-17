@@ -29,23 +29,58 @@ void main() {
 				int steps_taken;
 				for (steps_taken = 0; steps_taken < max_steps; steps_taken++) {
 								vec3 pos = ro + rd * t;
+								float current_step_size = step_size;
 
 								if (u_cloudVisible == 1) {
-												renderClouds(pos, step_size, transmittance, accumulated_color);
-								}
+												float distToCloud = getCloudDistance(pos);
 
-								if (u_terrainVisible == 1) {
-												if (renderTerrain(pos, rd, step_size, transmittance, accumulated_color)) {
-																break; 
+												if (distToCloud <= 0.0) {
+																renderClouds(pos, step_size, transmittance, accumulated_color);
+												} else {
+																if (u_terrainVisible == 0) {
+																				current_step_size = max(distToCloud, step_size);
+																} else if (pos.y > MAX_HEIGHT) {
+																				float distToTerrainZone = pos.y - MAX_HEIGHT;
+																				current_step_size = max(min(distToCloud, distToTerrainZone), step_size);
+																}
 												}
 								}
 
-								if (transmittance < 0.01) {
-												transmittance = 0.0;
-												break;
+								if (u_terrainVisible == 1 && pos.y <= MAX_HEIGHT) {
+												vec2 terrainUV = (pos.xz * 0.05); 
+												float rawHeight = texture(u_heightmap, terrainUV).r * MAX_HEIGHT;
+												float actualHeight = max(rawHeight, WATER_LEVEL);
+
+												if (pos.y < actualHeight) {
+																vec3 tColor;
+																if (actualHeight <= WATER_LEVEL + 0.01) {
+																				tColor = vec3(0.1, 0.35, 0.7); 
+																} else {
+																				vec3 rockColor = vec3(0.4, 0.4, 0.42); 
+																				vec3 snowColor = vec3(0.95, 0.95, 0.98); 
+																				float snowBlend = smoothstep(SNOW_LEVEL - 2.0, SNOW_LEVEL + 2.0, actualHeight);
+																				tColor = mix(rockColor, snowColor, snowBlend);
+																}
+
+																float hR = max(texture(u_heightmap, terrainUV + vec2(0.01, 0.0)).r * MAX_HEIGHT, WATER_LEVEL);
+																float hU = max(texture(u_heightmap, terrainUV + vec2(0.0, 0.01)).r * MAX_HEIGHT, WATER_LEVEL);
+																vec3 normal = normalize(vec3(actualHeight - hR, 0.2, actualHeight - hU));
+
+																float diffuse = max(dot(normal, lightDir), 0.0);
+																tColor *= (diffuse * 0.8 + 0.3);
+
+																accumulated_color += transmittance * tColor;
+																transmittance = 0.0; 
+																break;
+												}
+
+												if (transmittance < 0.01) {
+																transmittance = 0.0;
+																break;
+												}
 								}
 
-								t += step_size; 
+								t += current_step_size; 
 								if (t > max_t) break;
 				}
 
