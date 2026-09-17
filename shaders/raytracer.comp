@@ -35,7 +35,7 @@ void main() {
 												float distToCloud = getCloudDistance(pos);
 
 												if (distToCloud <= 0.0) {
-																renderClouds(pos, step_size, transmittance, accumulated_color);
+																renderClouds(pos, rd, step_size, transmittance, accumulated_color);
 												} else {
 																if (u_terrainVisible == 0) {
 																				current_step_size = max(distToCloud, step_size);
