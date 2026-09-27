@@ -11,35 +11,37 @@
 #include "caustx/panels/Panel.h"
 
 class CaustXEngine {
-public:
-    CaustXEngine();
-    ~CaustXEngine();
+				public:
+								CaustXEngine();
+								~CaustXEngine();
 
-    bool Init(int width, int height, const std::string& title);
-    void Run();
+								bool Init(int width, int height, const std::string& title);
+								void Run();
 
-private:
-    void Update(float deltaTime);
-    void Render();
-    void DrawUI();
-    void Shutdown();
+				private:
+								void Update(float deltaTime);
+								void Render();
+								void DrawUI();
+								void Shutdown();
 
-    GLFWwindow* window;
-    int windowWidth;
-    int windowHeight;
+								GLFWwindow* window;
+								int windowWidth;
+								int windowHeight;
 
-    std::unique_ptr<ComputeShader> raytraceShader;
-    std::unique_ptr<ComputeShader> terrainShader;
+								std::unique_ptr<ComputeShader> raytraceShader;
+								std::unique_ptr<ComputeShader> terrainShader;
+								std::unique_ptr<ComputeShader> noise3DShader;
 
-    GLuint renderTexture;
-		GLuint heatmapTexture;
-    GLuint heightmapTex;
+								GLuint renderTexture;
+								GLuint heatmapTexture;
+								GLuint heightmapTex;
+								GLuint noise3DTex;
 
-		TerrainConfig terrainConfig;
-		CameraConfig cameraConfig;
-		CloudConfig cloudConfig;
-		std::vector<std::unique_ptr<IPanel>> panels;
+								TerrainConfig terrainConfig;
+								CameraConfig cameraConfig;
+								CloudConfig cloudConfig;
+								std::vector<std::unique_ptr<IPanel>> panels;
 
-		GLuint gpuTimerQuery;
-		float gpuTimeMs = 0.0f;
+								GLuint gpuTimerQuery;
+								float gpuTimeMs = 0.0f;
 };

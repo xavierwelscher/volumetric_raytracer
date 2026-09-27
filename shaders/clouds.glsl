@@ -2,6 +2,8 @@ uniform float u_time;
 uniform float u_cloudDensityMultiplier;
 uniform float u_cloudLightAbsorption;
 uniform float u_cloudNoiseScale;
+uniform sampler3D u_noise3D;
+uniform float u_cloudCoverage;
 
 float sdBox(vec3 p, vec3 b) {
 				vec3 q = abs(p) - b;
@@ -10,7 +12,7 @@ float sdBox(vec3 p, vec3 b) {
 
 float getCloudDistance(vec3 p) {
     vec3 center = vec3(0.0, 15.0, 0.0);
-    vec3 bounds = vec3(6.0, 4.0, 6.0);
+    vec3 bounds = vec3(200.0, 20.0, 200.0);
     return sdBox(p - center, bounds);
 }
 
@@ -21,11 +23,16 @@ float getCloudDensity(vec3 p) {
 								return 0.0;
 				}
 
-				float edgeSoftness = 1.0;
+				float edgeSoftness = 0.5;
 				float baseDensity = clamp(-dist * edgeSoftness, 0.0, 1.0);
+
 				vec3 windOffset = vec3(u_time * 0.8, 0.0, u_time * 0.3);
-				float noiseVal = fbm3D((p + windOffset) * u_cloudNoiseScale);
-				float finalDensity = baseDensity - (1.0 - noiseVal) * 1.2;
+				vec3 samplePos = (p + windOffset) * u_cloudNoiseScale * 0.005;
+
+				float noiseVal = texture(u_noise3D, samplePos).r;
+				float densityWithCoverage = noiseVal - u_cloudCoverage;
+				float finalDensity = densityWithCoverage * baseDensity;
+				// float finalDensity = baseDensity - (1.0 - noiseVal) * 1.2;
 
 				return max(finalDensity * u_cloudDensityMultiplier, 0.0);
 }
@@ -74,7 +81,10 @@ void renderClouds(vec3 pos, vec3 rd, float step_size, inout float transmittance,
 								float cosTheta = dot(rd, lightDir);
 								float phaseVal = dualHenyeyGreenstein(cosTheta);
 								
-								vec3 cloudColor = vec3(1.0, 0.95, 0.9) * lightEnergy * phaseVal * 15.0;
+								vec3 ambientLight = vec3(0.15, 0.25, 0.35);
+								vec3 sunLight = vec3(1.0, 0.95, 0.9) * lightEnergy * phaseVal * 2.5;
+								vec3 cloudColor = ambientLight + sunLight;
+
 								float stepTransmittance = exp(-density * step_size * u_cloudLightAbsorption);
 								accumulated_color += transmittance * cloudColor * density * step_size;
 								transmittance *= stepTransmittance;

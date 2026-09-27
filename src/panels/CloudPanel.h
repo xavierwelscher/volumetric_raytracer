@@ -18,9 +18,10 @@ class CloudPanel : public IPanel {
 												if (config.isVisible) {
 																ImGui::Separator();
 																ImGui::Text("Cloud Shaping");
-																ImGui::SliderFloat("Density Multiplier", &config.densityMultiplier, 0.0f, 10.0f);
+																ImGui::SliderFloat("Density Multiplier", &config.densityMultiplier, 0.0f, 30.0f);
 																ImGui::SliderFloat("Light Absorption", &config.lightAbsorption, 0.0f, 2.0f);
 																ImGui::SliderFloat("Noise Scale", &config.noiseScale, 0.1f, 5.0f);
+																ImGui::SliderFloat("Coverage", &config.coverage, 0.0f, 1.0f);
 												}
 
 												ImGui::End();

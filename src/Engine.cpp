@@ -48,17 +48,19 @@ bool CaustXEngine::Init(int width, int height, const std::string& title) {
 				}
 
 				terrainShader = std::make_unique<ComputeShader>("shaders/terrain_gen.comp", std::vector<std::string>{"shaders/noise.glsl"});
+				noise3DShader = std::make_unique<ComputeShader>("shaders/noise3d_gen.comp", std::vector<std::string>{"shaders/noise.glsl"});
 				raytraceShader = std::make_unique<ComputeShader>(
 												"shaders/raytracer.comp", 
 												std::vector<std::string>{
-																"shaders/common.glsl",
-																"shaders/noise.glsl",
-																"shaders/terrain.glsl", 
-																"shaders/clouds.glsl"
+												"shaders/common.glsl",
+												"shaders/noise.glsl",
+												"shaders/terrain.glsl", 
+												"shaders/clouds.glsl"
 												}
-								);
+												);
 
-				if (terrainShader->GetID() == 0 || raytraceShader->GetID() == 0) {
+
+				if (terrainShader->GetID() == 0 || raytraceShader->GetID() == 0 || noise3DShader->GetID() == 0) {
 								std::cerr << "Error: Shader could not be loaded." << std::endl;
 								return false;
 				}
@@ -76,6 +78,21 @@ bool CaustXEngine::Init(int width, int height, const std::string& title) {
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, RENDER_WIDTH, RENDER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 				glBindImageTexture(2, heatmapTexture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+
+				glGenTextures(1, &noise3DTex);
+				glBindTexture(GL_TEXTURE_3D, noise3DTex);
+				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_MIRRORED_REPEAT);
+				int noiseSize = 128;
+				glTexImage3D(GL_TEXTURE_3D, 0, GL_R8, noiseSize, noiseSize, noiseSize, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
+				noise3DShader->Use();
+				glBindImageTexture(0, noise3DTex, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_R8);
+				glDispatchCompute(noiseSize / 8, noiseSize / 8, noiseSize / 8);
+				glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
+				glBindImageTexture(0, renderTexture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
 
 				glGenTextures(1, &heightmapTex);
 				glBindTexture(GL_TEXTURE_2D, heightmapTex);
@@ -227,12 +244,17 @@ void CaustXEngine::Render() {
 				raytraceShader->SetFloat("u_cloudDensityMultiplier", cloudConfig.densityMultiplier);
 				raytraceShader->SetFloat("u_cloudLightAbsorption", cloudConfig.lightAbsorption);
 				raytraceShader->SetFloat("u_cloudNoiseScale", cloudConfig.noiseScale);
+				raytraceShader->SetFloat("u_cloudCoverage", cloudConfig.coverage);
 				raytraceShader->SetInt("u_cloudVisible", cloudConfig.isVisible ? 1 : 0);
 
 				glActiveTexture(GL_TEXTURE1);
 				glBindTexture(GL_TEXTURE_2D, heightmapTex);
 				raytraceShader->SetInt("u_terrainVisible", terrainConfig.isVisible ? 1 : 0);
 				raytraceShader->SetInt("u_heightmap", 1);
+
+				glActiveTexture(GL_TEXTURE2);
+				glBindTexture(GL_TEXTURE_3D, noise3DTex);
+				raytraceShader->SetInt("u_noise3D", 2);
 
 				int workGroupsX = (RENDER_WIDTH + 7) / 8;
 				int workGroupsY = (RENDER_HEIGHT + 7) / 8;
