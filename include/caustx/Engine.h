@@ -31,11 +31,13 @@ class CaustXEngine {
 								std::unique_ptr<ComputeShader> raytraceShader;
 								std::unique_ptr<ComputeShader> terrainShader;
 								std::unique_ptr<ComputeShader> noise3DShader;
+								std::unique_ptr<ComputeShader> detailNoiseShader;
 
 								GLuint renderTexture;
 								GLuint heatmapTexture;
 								GLuint heightmapTex;
 								GLuint noise3DTex;
+								GLuint detailNoiseTex;
 
 								TerrainConfig terrainConfig;
 								CameraConfig cameraConfig;

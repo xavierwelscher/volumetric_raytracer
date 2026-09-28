@@ -49,6 +49,7 @@ bool CaustXEngine::Init(int width, int height, const std::string& title) {
 
 				terrainShader = std::make_unique<ComputeShader>("shaders/terrain_gen.comp", std::vector<std::string>{"shaders/noise.glsl"});
 				noise3DShader = std::make_unique<ComputeShader>("shaders/noise3d_gen.comp", std::vector<std::string>{"shaders/noise.glsl"});
+				detailNoiseShader = std::make_unique<ComputeShader>("shaders/detail_noise_gen.comp", std::vector<std::string>{"shaders/noise.glsl"});
 				raytraceShader = std::make_unique<ComputeShader>(
 												"shaders/raytracer.comp", 
 												std::vector<std::string>{
@@ -91,6 +92,21 @@ bool CaustXEngine::Init(int width, int height, const std::string& title) {
 				noise3DShader->Use();
 				glBindImageTexture(0, noise3DTex, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_R8);
 				glDispatchCompute(noiseSize / 8, noiseSize / 8, noiseSize / 8);
+				glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
+				glBindImageTexture(0, renderTexture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+
+				glGenTextures(1, &detailNoiseTex);
+				glBindTexture(GL_TEXTURE_3D, detailNoiseTex);
+				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_MIRRORED_REPEAT);
+				int detailNoiseSize = 64; 
+				glTexImage3D(GL_TEXTURE_3D, 0, GL_R8, detailNoiseSize, detailNoiseSize, detailNoiseSize, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
+				detailNoiseShader->Use();
+				glBindImageTexture(0, detailNoiseTex, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_R8);
+				glDispatchCompute(detailNoiseSize / 8, detailNoiseSize / 8, detailNoiseSize / 8);
 				glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
 				glBindImageTexture(0, renderTexture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
 
@@ -255,6 +271,10 @@ void CaustXEngine::Render() {
 				glActiveTexture(GL_TEXTURE2);
 				glBindTexture(GL_TEXTURE_3D, noise3DTex);
 				raytraceShader->SetInt("u_noise3D", 2);
+
+				glActiveTexture(GL_TEXTURE3);
+				glBindTexture(GL_TEXTURE_3D, detailNoiseTex);
+				raytraceShader->SetInt("u_detailNoise3D", 3);
 
 				int workGroupsX = (RENDER_WIDTH + 7) / 8;
 				int workGroupsY = (RENDER_HEIGHT + 7) / 8;

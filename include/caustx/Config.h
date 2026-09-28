@@ -15,8 +15,8 @@ struct CameraConfig {
 
 struct CloudConfig {
 				bool isVisible = true;
-				float noiseScale = 1.5f;
-				float densityMultiplier = 25.0f;
-				float lightAbsorption = 0.5f;
-				float coverage = 0.65f;
+				float noiseScale = 1.2f;
+				float densityMultiplier = 12.0f;
+				float lightAbsorption = 0.7f;
+				float coverage = 0.55f;
 };
