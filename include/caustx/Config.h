@@ -19,6 +19,10 @@ struct CloudConfig {
 				float densityMultiplier = 18.0f;
 				float lightAbsorption = 0.8f;
 				float coverage = 0.52f;
-				
+				float sunElevation = 35.0f;
+				float sunAzimuth = 145.0f;
 				int seed = 12345;
+
+				bool timePaused = false;
+				float timeSpeed = 10.0;
 };

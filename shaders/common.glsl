@@ -6,8 +6,8 @@ uniform float u_fov;
 
 uniform int u_terrainVisible;
 uniform int u_cloudVisible;
+uniform vec3 lightDir; 
 
-const vec3 lightDir = normalize(vec3(0.8, 0.8, -0.3)); 
 const vec3 skyColor = vec3(0.5, 0.7, 0.9);
 const vec3 fogColor = vec3(0.8, 0.85, 0.9);
 

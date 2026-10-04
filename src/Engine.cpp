@@ -163,74 +163,78 @@ void CaustXEngine::Run() {
 }
 
 void CaustXEngine::Update(float deltaTime) {
-    glm::vec3 pos(cameraConfig.position[0], cameraConfig.position[1], cameraConfig.position[2]);
-    glm::vec3 target(cameraConfig.target[0], cameraConfig.target[1], cameraConfig.target[2]);
-    
-    glm::vec3 forward = glm::normalize(target - pos);
-    
-    static double lastMouseX = 0.0;
-    static double lastMouseY = 0.0;
-    static bool isDragging = false;
-    bool moved = false;
+				if (!cloudConfig.timePaused) {
+								currentEngineTime += deltaTime * cloudConfig.timeSpeed;
+				}
 
-    // if (!ImGui::GetIO().WantCaptureMouse) {
-        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-            double mouseX, mouseY;
-            glfwGetCursorPos(window, &mouseX, &mouseY);
+				glm::vec3 pos(cameraConfig.position[0], cameraConfig.position[1], cameraConfig.position[2]);
+				glm::vec3 target(cameraConfig.target[0], cameraConfig.target[1], cameraConfig.target[2]);
 
-            if (!isDragging) {
-                lastMouseX = mouseX;
-                lastMouseY = mouseY;
-                isDragging = true;
-            }
+				glm::vec3 forward = glm::normalize(target - pos);
 
-            float deltaX = static_cast<float>(mouseX - lastMouseX);
-            float deltaY = static_cast<float>(lastMouseY - mouseY);
-            
-            lastMouseX = mouseX;
-            lastMouseY = mouseY;
+				static double lastMouseX = 0.0;
+				static double lastMouseY = 0.0;
+				static bool isDragging = false;
+				bool moved = false;
 
-            if (deltaX != 0.0f || deltaY != 0.0f) {
-                float sensitivity = 0.005f; 
-                
-                float yaw = std::atan2(forward.z, forward.x);
-                float pitch = std::asin(forward.y);
+				// if (!ImGui::GetIO().WantCaptureMouse) {
+				if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+								double mouseX, mouseY;
+								glfwGetCursorPos(window, &mouseX, &mouseY);
 
-                yaw += deltaX * sensitivity;
-                pitch += deltaY * sensitivity;
+								if (!isDragging) {
+												lastMouseX = mouseX;
+												lastMouseY = mouseY;
+												isDragging = true;
+								}
 
-                if (pitch > 1.5f) pitch = 1.5f;
-                if (pitch < -1.5f) pitch = -1.5f;
+								float deltaX = static_cast<float>(mouseX - lastMouseX);
+								float deltaY = static_cast<float>(lastMouseY - mouseY);
 
-                forward.x = std::cos(yaw) * std::cos(pitch);
-                forward.y = std::sin(pitch);
-                forward.z = std::sin(yaw) * std::cos(pitch);
-                forward = glm::normalize(forward);
-                
-                moved = true;
-            }
-        } else {
-            isDragging = false;
-        }
-    // }
+								lastMouseX = mouseX;
+								lastMouseY = mouseY;
 
-    glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
-    float speed = 10.0f * deltaTime;
+								if (deltaX != 0.0f || deltaY != 0.0f) {
+												float sensitivity = 0.005f; 
 
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) { pos += forward * speed; moved = true; }
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) { pos -= forward * speed; moved = true; }
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) { pos += right * speed; moved = true; }
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) { pos -= right * speed; moved = true; }
-    
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) { pos.y += speed; moved = true; }
-    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) { pos.y -= speed; moved = true; }
+												float yaw = std::atan2(forward.z, forward.x);
+												float pitch = std::asin(forward.y);
 
-    if (moved) {
-        target = pos + forward; 
-        
-        cameraConfig.position[0] = pos.x; cameraConfig.position[1] = pos.y; cameraConfig.position[2] = pos.z;
-        cameraConfig.target[0] = target.x; cameraConfig.target[1] = target.y; cameraConfig.target[2] = target.z;
-    }
+												yaw += deltaX * sensitivity;
+												pitch += deltaY * sensitivity;
+
+												if (pitch > 1.5f) pitch = 1.5f;
+												if (pitch < -1.5f) pitch = -1.5f;
+
+												forward.x = std::cos(yaw) * std::cos(pitch);
+												forward.y = std::sin(pitch);
+												forward.z = std::sin(yaw) * std::cos(pitch);
+												forward = glm::normalize(forward);
+
+												moved = true;
+								}
+				} else {
+								isDragging = false;
+				}
+				// }
+
+				glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
+				float speed = 10.0f * deltaTime;
+
+				if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) { pos += forward * speed; moved = true; }
+				if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) { pos -= forward * speed; moved = true; }
+				if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) { pos += right * speed; moved = true; }
+				if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) { pos -= right * speed; moved = true; }
+
+				if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) { pos.y += speed; moved = true; }
+				if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) { pos.y -= speed; moved = true; }
+
+				if (moved) {
+								target = pos + forward; 
+
+								cameraConfig.position[0] = pos.x; cameraConfig.position[1] = pos.y; cameraConfig.position[2] = pos.z;
+								cameraConfig.target[0] = target.x; cameraConfig.target[1] = target.y; cameraConfig.target[2] = target.z;
+				}
 }
 
 void CaustXEngine::Render() {
@@ -253,9 +257,7 @@ void CaustXEngine::Render() {
 				raytraceShader->SetVec3("u_camPos", cameraConfig.position[0], cameraConfig.position[1], cameraConfig.position[2]);
 				raytraceShader->SetVec3("u_camTarget", cameraConfig.target[0], cameraConfig.target[1], cameraConfig.target[2]);
 				raytraceShader->SetFloat("u_fov", cameraConfig.fov);
-
-				float currentTime = static_cast<float>(glfwGetTime());
-				raytraceShader->SetFloat("u_time", currentTime);
+				raytraceShader->SetFloat("u_time", currentEngineTime);
 
 				raytraceShader->SetFloat("u_cloudDensityMultiplier", cloudConfig.densityMultiplier);
 				raytraceShader->SetFloat("u_cloudLightAbsorption", cloudConfig.lightAbsorption);
@@ -263,6 +265,17 @@ void CaustXEngine::Render() {
 				raytraceShader->SetFloat("u_cloudCoverage", cloudConfig.coverage);
 				raytraceShader->SetInt("u_cloudVisible", cloudConfig.isVisible ? 1 : 0);
 				raytraceShader->SetFloat("u_cloudSeed", static_cast<float>(cloudConfig.seed));
+
+				float elRad = cloudConfig.sunElevation * (3.14159265359f / 180.0f);
+				float azRad = cloudConfig.sunAzimuth * (3.14159265359f / 180.0f);
+
+				glm::vec3 sunDir;
+				sunDir.x = std::cos(elRad) * std::sin(azRad);
+				sunDir.y = std::sin(elRad);
+				sunDir.z = std::cos(elRad) * std::cos(azRad);
+				sunDir = glm::normalize(sunDir);
+
+				raytraceShader->SetVec3("lightDir", sunDir.x, sunDir.y, sunDir.z);
 
 				glActiveTexture(GL_TEXTURE1);
 				glBindTexture(GL_TEXTURE_2D, heightmapTex);

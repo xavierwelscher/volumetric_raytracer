@@ -46,4 +46,6 @@ class CaustXEngine {
 
 								GLuint gpuTimerQuery;
 								float gpuTimeMs = 0.0f;
+
+								float currentEngineTime = 0.0f;
 };
