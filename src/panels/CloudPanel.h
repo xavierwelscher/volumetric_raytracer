@@ -2,6 +2,7 @@
 #include <caustx/panels/Panel.h>
 #include <caustx/Config.h>
 #include <imgui.h>
+#include <cstdlib>
 
 class CloudPanel : public IPanel {
 				private:
@@ -22,6 +23,12 @@ class CloudPanel : public IPanel {
 																ImGui::SliderFloat("Light Absorption", &config.lightAbsorption, 0.0f, 2.0f);
 																ImGui::SliderFloat("Noise Scale", &config.noiseScale, 0.1f, 5.0f);
 																ImGui::SliderFloat("Coverage", &config.coverage, 0.0f, 1.0f);
+
+																ImGui::InputInt("Seed", &config.seed);
+																ImGui::SameLine();
+																if (ImGui::Button("Random")) {
+																				config.seed = rand() % 100000;
+																}
 												}
 
 												ImGui::End();

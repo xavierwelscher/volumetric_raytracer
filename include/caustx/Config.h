@@ -19,4 +19,6 @@ struct CloudConfig {
 				float densityMultiplier = 18.0f;
 				float lightAbsorption = 0.8f;
 				float coverage = 0.52f;
+				
+				int seed = 12345;
 };

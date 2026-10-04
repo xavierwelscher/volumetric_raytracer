@@ -262,6 +262,7 @@ void CaustXEngine::Render() {
 				raytraceShader->SetFloat("u_cloudNoiseScale", cloudConfig.noiseScale);
 				raytraceShader->SetFloat("u_cloudCoverage", cloudConfig.coverage);
 				raytraceShader->SetInt("u_cloudVisible", cloudConfig.isVisible ? 1 : 0);
+				raytraceShader->SetFloat("u_cloudSeed", static_cast<float>(cloudConfig.seed));
 
 				glActiveTexture(GL_TEXTURE1);
 				glBindTexture(GL_TEXTURE_2D, heightmapTex);

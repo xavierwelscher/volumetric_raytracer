@@ -5,6 +5,7 @@ uniform float u_cloudNoiseScale;
 uniform sampler3D u_noise3D;
 uniform float u_cloudCoverage;
 uniform sampler3D u_detailNoise3D;
+uniform float u_cloudSeed;
 
 float remap(float value, float originalMin, float originalMax, float newMin, float newMax) {
 				return newMin + (((value - originalMin) / (originalMax - originalMin)) * (newMax - newMin));
@@ -40,14 +41,20 @@ float getCloudDensity(vec3 p) {
 
 				vec3 windOffset = vec3(u_time * 0.8, 0.0, u_time * 0.3);
 
-				float weatherNoise = texture(u_noise3D, p * 0.001 + windOffset * 0.0005).r;
+				vec3 seedOffset = vec3(
+												mod(u_cloudSeed * 113.5, 100.0),
+												mod(u_cloudSeed * 271.9, 100.0),
+												mod(u_cloudSeed * 124.6, 100.0)
+												);
+				
+				float weatherNoise = texture(u_noise3D, (p + seedOffset) * 0.001 + windOffset * 0.0005).r;
 				float variedHeightFraction = heightFraction - (weatherNoise - 0.5) * 0.5;
 
 				float bottom = smoothstep(0.1, 0.3, variedHeightFraction);
 				float top = 1.0 - smoothstep(0.4, 0.9, variedHeightFraction);
 				float heightGradient = bottom * top;
 
-				vec3 samplePos = (p + windOffset) * u_cloudNoiseScale * 0.005;
+				vec3 samplePos = (p + windOffset + seedOffset) * u_cloudNoiseScale * 0.005;
 				float noiseVal = texture(u_noise3D, samplePos).r;
 				noiseVal *= heightGradient;
 
@@ -56,7 +63,7 @@ float getCloudDensity(vec3 p) {
 				// float finalDensity = baseDensity - (1.0 - noiseVal) * 1.2;
 
 				if (finalDensity > 0.0) {
-								vec3 detailSamplePos = (p + windOffset * 1.5) * u_cloudNoiseScale * 0.02;
+								vec3 detailSamplePos = (p + windOffset * 1.5 + seedOffset) * u_cloudNoiseScale * 0.02;
 								float detailNoiseVal = texture(u_detailNoise3D, detailSamplePos).r;
 
 								float highFreqNoiseModifier = mix(detailNoiseVal, 1.0 - detailNoiseVal, clamp(heightFraction * 3.0, 0.0, 1.0));
