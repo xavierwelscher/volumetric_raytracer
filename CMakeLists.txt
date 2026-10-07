@@ -7,10 +7,17 @@ project(
     LANGUAGES C CXX
 )
 
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Standard Build-Typ" FORCE)
+endif()
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin)
 
 include(FetchContent)
 
@@ -55,8 +62,6 @@ FetchContent_MakeAvailable(glfw glm imgui glad)
 
 glad_add_library(glad_gl REPRODUCIBLE API gl:core=4.3)
 
-
-
 add_library(imgui_lib STATIC
     ${imgui_SOURCE_DIR}/imgui.cpp
     ${imgui_SOURCE_DIR}/imgui_draw.cpp
@@ -78,12 +83,10 @@ target_link_libraries(imgui_lib PUBLIC
     OpenGL::GL
 )
 
-
-
 add_executable(caustx
     src/main.cpp
-		src/Engine.cpp
-		src/Shader.cpp
+    src/Engine.cpp
+    src/Shader.cpp
 )
 
 target_include_directories(caustx PRIVATE
@@ -91,9 +94,17 @@ target_include_directories(caustx PRIVATE
 )
 
 if(MSVC)
-    target_compile_options(caustx PRIVATE /W4 /O2 /arch:AVX2)
+    target_compile_options(caustx PRIVATE 
+        /W4 
+        $<$<CONFIG:Release>:/O2>
+        $<$<CONFIG:Release>:/arch:AVX2>
+    )
 else()
-    target_compile_options(caustx PRIVATE -Wall -Wextra -O3 -march=native)
+    target_compile_options(caustx PRIVATE 
+        -Wall -Wextra 
+        $<$<CONFIG:Release>:-O3>
+        $<$<CONFIG:Release>:-march=native>
+    )
 endif()
 
 if(OpenMP_CXX_FOUND)
@@ -109,11 +120,11 @@ target_link_libraries(caustx PRIVATE
 )
 
 target_compile_definitions(caustx PRIVATE
-				"SHADER_DIR=\"${CMAKE_SORUCE_DIR}/shaders\""
+    "SHADER_DIR=\"${CMAKE_SOURCE_DIR}/shaders\""
 )
 
 add_custom_command(TARGET caustx POST_BUILD
-				COMMAND ${CMAKE_COMMAND} -E copy_directory
-				"${CMAKE_SOURCE_DIR}/shaders"
-				"$<TARGET_FILE_DIR:caustx>"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_SOURCE_DIR}/shaders"
+    "$<TARGET_FILE_DIR:caustx>/shaders"
 )

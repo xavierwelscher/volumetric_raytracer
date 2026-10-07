@@ -2,6 +2,25 @@
 
 A simple volumetric raytracer to render clouds.
 
+## Build
+
+### Linux
+
+```
+cmake -B build
+cmake --build build
+
+./build/bin/caustx
+```
+
+### Windows
+
+```
+cmake -B build
+cmake --build build --config Release
+
+.\build\bin\caustx.exe
+```
 
 ## References:
 
