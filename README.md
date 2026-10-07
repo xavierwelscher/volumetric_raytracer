@@ -19,7 +19,7 @@ cmake --build build
 cmake -B build
 cmake --build build --config Release
 
-.\build\bin\caustx.exe
+.\build\bin\Release\caustx.exe
 ```
 
 ## References:
